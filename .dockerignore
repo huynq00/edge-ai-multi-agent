@@ -1,0 +1,15 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.git/
+.cursor/
+metrics/*.json
+*.log
+.de-tai*.PDF
+de-tai-cuoi-ky-edge-ai.PDF
+docs/
+reports/
+data/
+*.md
+.DS_Store

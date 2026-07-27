@@ -1,0 +1,47 @@
+# agents:
+#   mqtt_broker: hostname hoặc IP của Mosquitto
+#   mỗi agent chạy trên VM riêng — không share process
+
+mqtt:
+  # Local: localhost | Docker Compose service name: mqtt-broker
+  host: "localhost"
+  port: 1883
+  topics:
+    sensor_readings: "edge/sensor/readings"
+    analysis_results: "edge/analysis/results"
+    decision_alerts: "edge/decision/alerts"
+    heartbeat: "edge/system/heartbeat"
+    control: "edge/system/control"
+
+sensor_agent:
+  interval_sec: 2
+  heartbeat_every_n: 5
+  anomaly_chance: 0.05
+  sensors: ["temperature", "humidity", "pm25", "co2"]
+
+analysis_agent:
+  model_backend: "onnx"   # onnx | llm
+  model_path: "models/anomaly.onnx"
+  heartbeat_every_n: 10
+  # nếu dùng LLM:
+  # model_name: "Qwen2.5-0.5B"
+  # quantization: "Q4_K_M"
+  # model_size_mb: null
+
+decision_agent:
+  analysis_timeout_sec: 5
+  fallback: "threshold_rules"
+  heartbeat_every_n: 10
+  alert_thresholds:
+    temperature_c: 40
+    pm25_ugm3: 75
+    co2_ppm: 1500
+
+resource_limits:
+  vcpu: 2
+  ram_gb: 4
+  gpu: false
+
+metrics:
+  sample_interval_sec: 1
+  output_dir: "metrics"

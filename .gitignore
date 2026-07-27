@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# Models & large artifacts
+*.gguf
+models/*
+!models/.gitkeep
+!models/anomaly_meta.json
+# anomaly.onnx tạo bằng scripts/train_anomaly_model.py (có thể commit nếu nhỏ)
+
+# Metrics / logs
+metrics/*.json
+!metrics/.gitkeep
+*.log
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+.cursor/
+
+# Docker
+*.tar

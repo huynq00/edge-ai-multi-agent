@@ -1,0 +1,74 @@
+# Edge AI Multi-Agent — mỗi agent = 1 container mô phỏng VM 2 vCPU / 4GB RAM (CPU-only).
+services:
+  mqtt-broker:
+    image: eclipse-mosquitto:2
+    container_name: mqtt-broker
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./broker/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
+    restart: unless-stopped
+    networks:
+      - edge_net
+
+  sensor_agent:
+    build: .
+    image: edge-ai-agent:latest
+    container_name: sensor_agent
+    command: ["python", "-m", "agents.sensor_agent.main"]
+    environment:
+      MQTT_HOST: mqtt-broker
+      MQTT_PORT: "1883"
+    volumes:
+      - ./configs:/app/configs:ro
+      - ./metrics:/app/metrics
+    depends_on:
+      - mqtt-broker
+    cpus: 2.0
+    mem_limit: 4g
+    memswap_limit: 4g
+    restart: unless-stopped
+    networks:
+      - edge_net
+
+  analysis_agent:
+    image: edge-ai-agent:latest
+    container_name: analysis_agent
+    command: ["python", "-m", "agents.analysis_agent.main"]
+    environment:
+      MQTT_HOST: mqtt-broker
+      MQTT_PORT: "1883"
+    volumes:
+      - ./configs:/app/configs:ro
+      - ./metrics:/app/metrics
+    depends_on:
+      - mqtt-broker
+    cpus: 2.0
+    mem_limit: 4g
+    memswap_limit: 4g
+    restart: unless-stopped
+    networks:
+      - edge_net
+
+  decision_agent:
+    image: edge-ai-agent:latest
+    container_name: decision_agent
+    command: ["python", "-m", "agents.decision_agent.main"]
+    environment:
+      MQTT_HOST: mqtt-broker
+      MQTT_PORT: "1883"
+    volumes:
+      - ./configs:/app/configs:ro
+      - ./metrics:/app/metrics
+    depends_on:
+      - mqtt-broker
+    cpus: 2.0
+    mem_limit: 4g
+    memswap_limit: 4g
+    restart: unless-stopped
+    networks:
+      - edge_net
+
+networks:
+  edge_net:
+    driver: bridge

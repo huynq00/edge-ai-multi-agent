@@ -1,0 +1,8 @@
+paho-mqtt>=1.6.1
+psutil>=5.9.0
+pyyaml>=6.0
+onnxruntime>=1.17.0
+onnx>=1.15.0
+numpy>=1.26.0
+scikit-learn>=1.4.0
+skl2onnx>=1.16.0

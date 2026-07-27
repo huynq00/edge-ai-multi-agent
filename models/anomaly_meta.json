@@ -1,0 +1,21 @@
+{
+  "model": "IsolationForest",
+  "pipeline": [
+    "StandardScaler",
+    "IsolationForest"
+  ],
+  "features": [
+    "temperature_c",
+    "humidity_pct",
+    "pm25_ugm3",
+    "co2_ppm"
+  ],
+  "label_anomaly": -1,
+  "label_normal": 1,
+  "contamination": 0.05,
+  "n_estimators": 100,
+  "train_samples": 2000,
+  "normal_recall_approx": 0.96,
+  "anomaly_recall_approx": 1.0,
+  "onnx_path": "models/anomaly.onnx"
+}
