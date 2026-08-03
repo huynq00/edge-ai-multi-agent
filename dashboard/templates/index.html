@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edge AI Monitor</title>
+  <script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+
+    /* ── Header ─────────────────────────────────────────────────────── */
+    header {
+      padding: 14px 24px;
+      border-bottom: 1px solid #1e293b;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    header h1 { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.03em; flex: 1; }
+    header h1 span { color: #38bdf8; }
+    #conn-badge {
+      font-size: 0.72rem; font-weight: 600; padding: 3px 10px;
+      border-radius: 99px; background: #1e293b; color: #64748b;
+      display: flex; align-items: center; gap: 5px;
+    }
+    #conn-badge::before {
+      content: ''; width: 7px; height: 7px; border-radius: 50%;
+      background: #64748b;
+    }
+    #conn-badge.on { background: #052e16; color: #4ade80; }
+    #conn-badge.on::before { background: #4ade80; }
+    #conn-badge.off { background: #450a0a; color: #f87171; }
+    #conn-badge.off::before { background: #f87171; }
+    #clock { font-size: 0.8rem; color: #64748b; font-variant-numeric: tabular-nums; }
+
+    /* ── Layout ──────────────────────────────────────────────────────── */
+    .main { padding: 20px 24px; display: flex; flex-direction: column; gap: 18px; }
+    .sec-title {
+      font-size: 0.72rem; color: #64748b;
+      text-transform: uppercase; letter-spacing: 0.06em;
+      margin-bottom: 12px;
+    }
+
+    /* ── Agent cards ─────────────────────────────────────────────────── */
+    .agent-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+    .agent-card {
+      background: #1e293b; border: 1px solid #334155;
+      border-radius: 10px; padding: 14px 16px;
+    }
+    .agent-card .role { font-size: 0.68rem; color: #475569; margin-bottom: 5px; }
+    .agent-card .name { font-size: 0.92rem; font-weight: 700; margin-bottom: 10px; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 0.72rem; font-weight: 700; padding: 3px 10px; border-radius: 99px;
+    }
+    .badge::before { content: ''; width: 7px; height: 7px; border-radius: 50%; }
+    .badge.alive   { background: #052e16; color: #4ade80; }
+    .badge.alive::before { background: #4ade80; }
+    .badge.unknown { background: #1e293b; color: #64748b; border: 1px solid #334155; }
+    .badge.unknown::before { background: #64748b; }
+    .badge.degraded{ background: #431407; color: #fb923c; }
+    .badge.degraded::before { background: #fb923c; }
+    .badge.down    { background: #450a0a; color: #f87171; }
+    .badge.down::before { background: #f87171; }
+    .agent-card .hb-time { font-size: 0.68rem; color: #475569; margin-top: 8px; }
+
+    /* ── Sensor readings ─────────────────────────────────────────────── */
+    .sensor-card {
+      background: #1e293b; border: 1px solid #334155;
+      border-radius: 10px; padding: 14px 16px;
+    }
+    .readings-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .reading-item .label { font-size: 0.7rem; color: #64748b; margin-bottom: 4px; }
+    .reading-item .value { font-size: 1.5rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .reading-item .unit  { font-size: 0.7rem; color: #94a3b8; margin-left: 2px; }
+    #last-trace { font-size: 0.67rem; color: #334155; margin-top: 10px; }
+
+    /* ── Charts ──────────────────────────────────────────────────────── */
+    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .chart-card {
+      background: #1e293b; border: 1px solid #334155;
+      border-radius: 10px; padding: 14px 16px;
+    }
+    .chart-stats {
+      display: flex; gap: 16px; margin-bottom: 10px;
+    }
+    .chart-stats .stat .slabel { font-size: 0.67rem; color: #64748b; }
+    .chart-stats .stat .sval   { font-size: 0.9rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .chart-wrap { position: relative; height: 160px; }
+
+    /* ── Alert feed ──────────────────────────────────────────────────── */
+    .alert-card {
+      background: #1e293b; border: 1px solid #334155;
+      border-radius: 10px; padding: 14px 16px;
+    }
+    .alert-list {
+      display: flex; flex-direction: column; gap: 7px;
+      max-height: 280px; overflow-y: auto;
+    }
+    .alert-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      background: #0f172a; border-radius: 6px; padding: 9px 11px;
+      border-left: 3px solid #334155;
+      animation: fadein .25s ease;
+    }
+    @keyframes fadein { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+    .alert-item.info     { border-color: #38bdf8; }
+    .alert-item.warning  { border-color: #fbbf24; }
+    .alert-item.critical { border-color: #f87171; }
+    .alert-item.degraded { border-color: #fb923c; }
+    .sev-pill {
+      font-size: 0.65rem; font-weight: 800; text-transform: uppercase;
+      padding: 2px 7px; border-radius: 4px; white-space: nowrap; flex-shrink: 0;
+    }
+    .info .sev-pill     { background: #0c4a6e; color: #38bdf8; }
+    .warning .sev-pill  { background: #422006; color: #fbbf24; }
+    .critical .sev-pill { background: #450a0a; color: #f87171; }
+    .degraded .sev-pill { background: #431407; color: #fb923c; }
+    .alert-body { flex: 1; min-width: 0; }
+    .alert-reason { font-size: 0.78rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .alert-meta   { font-size: 0.67rem; color: #475569; margin-top: 3px; }
+    .empty-state  { font-size: 0.78rem; color: #334155; text-align: center; padding: 28px 0; }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 99px; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>⬡ Edge AI <span>Monitor</span></h1>
+  <div id="conn-badge">connecting…</div>
+  <div id="clock">--:--:--</div>
+</header>
+
+<div class="main">
+
+  <!-- Agent status -->
+  <div class="agent-grid">
+    <div class="agent-card" id="card-sensor_agent">
+      <div class="role">sensor_agent · Edge VM #1</div>
+      <div class="name">Sensor</div>
+      <span class="badge unknown" id="badge-sensor_agent">unknown</span>
+      <div class="hb-time" id="hb-sensor_agent">—</div>
+    </div>
+    <div class="agent-card" id="card-analysis_agent">
+      <div class="role">analysis_agent · Edge VM #2</div>
+      <div class="name">Analysis (ONNX)</div>
+      <span class="badge unknown" id="badge-analysis_agent">unknown</span>
+      <div class="hb-time" id="hb-analysis_agent">—</div>
+    </div>
+    <div class="agent-card" id="card-decision_agent">
+      <div class="role">decision_agent · Edge VM #3</div>
+      <div class="name">Decision</div>
+      <span class="badge unknown" id="badge-decision_agent">unknown</span>
+      <div class="hb-time" id="hb-decision_agent">—</div>
+    </div>
+  </div>
+
+  <!-- Sensor readings -->
+  <div class="sensor-card">
+    <div class="sec-title">Sensor readings mới nhất</div>
+    <div class="readings-grid">
+      <div class="reading-item">
+        <div class="label">Nhiệt độ</div>
+        <div><span class="value" id="val-temp">—</span><span class="unit">°C</span></div>
+      </div>
+      <div class="reading-item">
+        <div class="label">Độ ẩm</div>
+        <div><span class="value" id="val-hum">—</span><span class="unit">%</span></div>
+      </div>
+      <div class="reading-item">
+        <div class="label">PM2.5</div>
+        <div><span class="value" id="val-pm">—</span><span class="unit">µg/m³</span></div>
+      </div>
+      <div class="reading-item">
+        <div class="label">CO₂</div>
+        <div><span class="value" id="val-co2">—</span><span class="unit">ppm</span></div>
+      </div>
+    </div>
+    <div id="last-trace">trace_id: —</div>
+  </div>
+
+  <!-- Charts -->
+  <div class="charts-grid">
+    <div class="chart-card">
+      <div class="sec-title">E2E Latency (ms)</div>
+      <div class="chart-stats">
+        <div class="stat"><div class="slabel">p50</div><div class="sval" id="e2e-p50">—</div></div>
+        <div class="stat"><div class="slabel">p95</div><div class="sval" id="e2e-p95">—</div></div>
+        <div class="stat"><div class="slabel">last</div><div class="sval" id="e2e-last">—</div></div>
+      </div>
+      <div class="chart-wrap"><canvas id="e2eChart"></canvas></div>
+    </div>
+    <div class="chart-card">
+      <div class="sec-title">ONNX Inference Time (ms)</div>
+      <div class="chart-stats">
+        <div class="stat"><div class="slabel">p50</div><div class="sval" id="inf-p50">—</div></div>
+        <div class="stat"><div class="slabel">p95</div><div class="sval" id="inf-p95">—</div></div>
+        <div class="stat"><div class="slabel">last</div><div class="sval" id="inf-last">—</div></div>
+      </div>
+      <div class="chart-wrap"><canvas id="inferChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Alert feed -->
+  <div class="alert-card">
+    <div class="sec-title">Alert Feed</div>
+    <div class="alert-list" id="alertList">
+      <div class="empty-state">Chưa có alert — chờ pipeline...</div>
+    </div>
+  </div>
+
+</div><!-- .main -->
+
+<script>
+const initData = {{ init_data|safe }};
+const MAX_PTS = 60;
+
+// ── Clock ──────────────────────────────────────────────────────────────
+setInterval(() => {
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('vi-VN');
+}, 1000);
+
+// ── Stale agent watchdog ───────────────────────────────────────────────
+const lastHbTime = {};
+setInterval(() => {
+  const now = Date.now() / 1000;
+  for (const [id, ts] of Object.entries(lastHbTime)) {
+    if (ts > 0 && (now - ts) > 30) setAgentBadge(id, 'down');
+  }
+}, 5000);
+
+// ── Agent status ───────────────────────────────────────────────────────
+function setAgentBadge(agentId, status) {
+  const badge = document.getElementById('badge-' + agentId);
+  if (!badge) return;
+  badge.className = 'badge ' + (status || 'unknown');
+  badge.textContent = status || 'unknown';
+}
+
+function setAgentHb(agentId, ts) {
+  lastHbTime[agentId] = ts;
+  const el = document.getElementById('hb-' + agentId);
+  if (!el || !ts) return;
+  const diff = Math.round(Date.now() / 1000 - ts);
+  el.textContent = diff <= 1 ? 'HB just now' : `HB ${diff}s ago`;
+}
+
+// Populate agent status from init_data
+for (const [id, info] of Object.entries(initData.agents || {})) {
+  setAgentBadge(id, info.status);
+  setAgentHb(id, info.last_hb);
+}
+
+// ── Chart factory ──────────────────────────────────────────────────────
+function makeChart(canvasId, color) {
+  return new Chart(document.getElementById(canvasId), {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [{
+        data: [],
+        borderColor: color,
+        backgroundColor: color + '18',
+        fill: true,
+        tension: 0.35,
+        pointRadius: 2,
+        borderWidth: 1.5,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      animation: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { display: false },
+        y: {
+          ticks: { color: '#64748b', font: { size: 11 } },
+          grid: { color: '#1a2438' },
+          border: { color: '#334155' },
+        }
+      }
+    }
+  });
+}
+
+const e2eChart   = makeChart('e2eChart',   '#38bdf8');
+const inferChart = makeChart('inferChart', '#a78bfa');
+
+function pushChart(chart, ms) {
+  const d = chart.data;
+  d.labels.push('');
+  d.datasets[0].data.push(+ms.toFixed(2));
+  if (d.labels.length > MAX_PTS) { d.labels.shift(); d.datasets[0].data.shift(); }
+  chart.update('none');
+}
+
+// ── Percentile helper ──────────────────────────────────────────────────
+function pct(arr, p) {
+  if (!arr.length) return null;
+  const s = [...arr].sort((a, b) => a - b);
+  return s[Math.min(s.length - 1, Math.floor(s.length * p))].toFixed(1);
+}
+
+const e2eData   = (initData.e2e   || []).map(p => p.ms);
+const inferData = (initData.infer || []).map(p => p.ms);
+
+function refreshStats() {
+  const setEl = (id, v) => { document.getElementById(id).textContent = v !== null ? v + ' ms' : '—'; };
+  setEl('e2e-p50', pct(e2eData, 0.50));
+  setEl('e2e-p95', pct(e2eData, 0.95));
+  setEl('e2e-last', e2eData.length ? e2eData[e2eData.length-1].toFixed(1) + ' ms' : '—');
+  setEl('inf-p50', pct(inferData, 0.50));
+  setEl('inf-p95', pct(inferData, 0.95));
+  setEl('inf-last', inferData.length ? inferData[inferData.length-1].toFixed(1) + ' ms' : '—');
+}
+
+// Seed charts with historical data
+(initData.e2e   || []).forEach(p => pushChart(e2eChart,   p.ms));
+(initData.infer || []).forEach(p => pushChart(inferChart, p.ms));
+refreshStats();
+
+// ── Alert feed ─────────────────────────────────────────────────────────
+function sevClass(a) { return a.degraded ? 'degraded' : (a.severity || 'info'); }
+
+function renderAlert(a) {
+  const sev   = sevClass(a);
+  const ts    = a.ts ? new Date(a.ts * 1000).toLocaleTimeString('vi-VN') : '';
+  const e2e   = a.e2e_ms != null ? `· E2E ${(+a.e2e_ms).toFixed(0)} ms ` : '';
+  const tid   = a.trace_id ? a.trace_id.slice(0, 8) + '…' : '';
+  const deg   = a.degraded ? '<span style="color:#fb923c"> · degraded</span>' : '';
+  return `<div class="alert-item ${sev}">
+    <span class="sev-pill">${sev}</span>
+    <div class="alert-body">
+      <div class="alert-reason">${a.reason}</div>
+      <div class="alert-meta">${ts} ${e2e}${tid}${deg}</div>
+    </div>
+  </div>`;
+}
+
+function populateAlerts(list) {
+  const el = document.getElementById('alertList');
+  if (!list || !list.length) {
+    el.innerHTML = '<div class="empty-state">Chưa có alert — chờ pipeline...</div>';
+    return;
+  }
+  el.innerHTML = list.map(renderAlert).join('');
+}
+
+populateAlerts(initData.alerts || []);
+
+// ── Socket.IO ──────────────────────────────────────────────────────────
+const socket = io();
+const connBadge = document.getElementById('conn-badge');
+
+socket.on('connect',    () => { connBadge.className = 'on';  connBadge.textContent = 'Connected'; });
+socket.on('disconnect', () => { connBadge.className = 'off'; connBadge.textContent = 'Disconnected'; });
+
+socket.on('sensor', d => {
+  document.getElementById('val-temp').textContent = (+d.temperature_c).toFixed(1);
+  document.getElementById('val-hum').textContent  = (+d.humidity_pct).toFixed(1);
+  document.getElementById('val-pm').textContent   = (+d.pm25_ugm3).toFixed(1);
+  document.getElementById('val-co2').textContent  = (+d.co2_ppm).toFixed(0);
+  document.getElementById('last-trace').textContent = 'trace_id: ' + d.trace_id;
+});
+
+socket.on('analysis', d => {
+  inferData.push(d.ms);
+  if (inferData.length > MAX_PTS) inferData.shift();
+  pushChart(inferChart, d.ms);
+  refreshStats();
+});
+
+socket.on('alert', d => {
+  if (d.e2e_ms != null) {
+    e2eData.push(d.e2e_ms);
+    if (e2eData.length > MAX_PTS) e2eData.shift();
+    pushChart(e2eChart, d.e2e_ms);
+  }
+  refreshStats();
+  const el = document.getElementById('alertList');
+  const empty = el.querySelector('.empty-state');
+  if (empty) empty.remove();
+  el.insertAdjacentHTML('afterbegin', renderAlert(d));
+  const items = el.querySelectorAll('.alert-item');
+  if (items.length > 30) items[items.length - 1].remove();
+});
+
+socket.on('heartbeat', d => {
+  setAgentBadge(d.agent_id, d.status);
+  setAgentHb(d.agent_id, Date.now() / 1000);
+});
+</script>
+</body>
+</html>

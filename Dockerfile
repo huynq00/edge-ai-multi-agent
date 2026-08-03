@@ -21,6 +21,9 @@ COPY shared ./shared
 COPY agents ./agents
 COPY configs ./configs
 COPY scripts ./scripts
+COPY dashboard ./dashboard
+
+EXPOSE 5000
 
 # Train ONNX trong image để analysis_agent chạy được ngay (CPU-only).
 RUN python scripts/train_anomaly_model.py
