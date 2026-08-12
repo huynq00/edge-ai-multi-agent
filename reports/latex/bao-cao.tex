@@ -1,0 +1,1050 @@
+% !TEX program = pdflatex
+% Báo cáo đồ án CE2206 — Multi-Agent trên Edge
+% File đơn: toàn bộ nội dung trong bao-cao.tex
+% Biên dịch (pdfLaTeX — mặc định Overleaf):
+%   latexmk -pdf bao-cao.tex
+%   hoặc: pdflatex bao-cao.tex && bibtex bao-cao && pdflatex bao-cao.tex && pdflatex bao-cao.tex
+\documentclass[12pt,a4paper,oneside]{report}
+
+\begin{filecontents*}[overwrite]{refs.bib}
+@misc{ce2206-de,
+  title        = {Đề tài cuối kỳ: Triển khai hệ thống Multi-Agent trên Edge},
+  author       = {{CE2206}},
+  year         = {2026},
+  note         = {Tài liệu đề bài học phần, file de-tai-cuoi-ky-edge-ai.PDF}
+}
+
+@misc{mosquitto,
+  title        = {Eclipse {Mosquitto} --- An open source {MQTT} broker},
+  author       = {{Eclipse Foundation}},
+  howpublished = {\url{https://mosquitto.org/}},
+  year         = {2024}
+}
+
+@misc{oasis-mqtt,
+  title        = {{MQTT} Version 3.1.1},
+  author       = {{OASIS}},
+  year         = {2014},
+  howpublished = {\url{https://docs.oasis-open.org/mqtt/mqtt/v3.1.1/mqtt-v3.1.1.html}}
+}
+
+@misc{onnxruntime,
+  title        = {{ONNX} Runtime documentation},
+  author       = {{Microsoft}},
+  howpublished = {\url{https://onnxruntime.ai/}},
+  year         = {2024}
+}
+
+@inproceedings{liu2008isolation,
+  title     = {Isolation Forest},
+  author    = {Liu, Fei Tony and Ting, Kai Ming and Zhou, Zhi-Hua},
+  booktitle = {Proceedings of the IEEE International Conference on Data Mining (ICDM)},
+  year      = {2008},
+  pages     = {413--422}
+}
+
+@article{pedregosa2011scikit,
+  title   = {Scikit-learn: Machine Learning in {Python}},
+  author  = {Pedregosa, Fabian and Varoquaux, Ga{\"e}l and Gramfort, Alexandre and others},
+  journal = {Journal of Machine Learning Research},
+  volume  = {12},
+  pages   = {2825--2830},
+  year    = {2011}
+}
+
+@article{shi2016edge,
+  title   = {Edge Computing: Vision and Challenges},
+  author  = {Shi, Weisong and Cao, Jie and Zhang, Quan and Li, Youhuizi and Xu, Lanyu},
+  journal = {IEEE Internet of Things Journal},
+  volume  = {3},
+  number  = {5},
+  pages   = {637--646},
+  year    = {2016}
+}
+
+@misc{docker-compose,
+  title        = {Docker Compose resource constraints},
+  author       = {{Docker Inc.}},
+  howpublished = {\url{https://docs.docker.com/compose/compose-file/}},
+  year         = {2024}
+}
+
+@misc{paho-mqtt,
+  title        = {Eclipse {Paho} {MQTT} Python Client},
+  author       = {{Eclipse Foundation}},
+  howpublished = {\url{https://www.eclipse.org/paho/}},
+  year         = {2024}
+}
+
+@misc{internal-docs,
+  title        = {Tài liệu nội bộ đồ án Edge AI Multi-Agent},
+  author       = {{Nhóm đồ án CE2206}},
+  year         = {2026},
+  note         = {docs/phan-tich-de-bai.md, docs/kien-truc.md, docs/QUY-UOC-CODE.md, reports/metrics\_run.json}
+}
+\end{filecontents*}
+
+%========== Preamble ==========
+% Gói và cấu hình chung — biên dịch bằng pdfLaTeX (Overleaf mặc định)
+\usepackage[utf8]{inputenc}
+\usepackage[T5]{fontenc}
+\usepackage[vietnamese]{babel}
+\usepackage{lmodern}
+
+\usepackage{geometry}
+\geometry{a4paper,margin=2.5cm}
+
+\usepackage{setspace}
+\onehalfspacing
+
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{caption}
+\captionsetup{font=small,labelfont=bf}
+
+\usepackage{amsmath,amssymb}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=black,
+  citecolor=blue!50!black,
+  urlcolor=blue!60!black,
+  pdftitle={Báo cáo đồ án Multi-Agent trên Edge — CE2206},
+  pdfauthor={Sinh viên CE2206},
+}
+
+\usepackage{enumitem}
+\setlist{leftmargin=*,itemsep=0.35em,parsep=0.1em,topsep=0.4em}
+
+\usepackage{listings}
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  columns=fullflexible,
+  showstringspaces=false,
+  aboveskip=0.8em,
+  belowskip=0.8em,
+}
+
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.17}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\scriptsize\itshape Multi-Agent trên Edge --- CE2206}
+\fancyhead[R]{\scriptsize\itshape Báo cáo đồ án}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\renewcommand{\bibname}{Tài liệu tham khảo}
+\renewcommand{\contentsname}{Mục lục}
+\renewcommand{\listfigurename}{Danh mục hình}
+\renewcommand{\listtablename}{Danh mục bảng}
+\renewcommand{\chaptername}{Chương}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\agent}[1]{\texttt{#1}}
+\newcommand{\placeholder}[1]{\textit{[#1]}}
+
+\begin{document}
+
+%---------- Phần đầu ----------
+\pagenumbering{roman}
+\begin{titlepage}
+  \centering
+  {\large \textbf{BÁO CÁO ĐỒ ÁN CUỐI KỲ}}\\[1.5em]
+  {\LARGE \textbf{TRIỂN KHAI HỆ THỐNG MULTI-AGENT\\TRÊN EDGE}}\\[0.8em]
+  {\large Ứng dụng giám sát môi trường thông minh\\với suy luận AI cục bộ}\\[2em]
+
+  \begin{tabular}{@{}ll@{}}
+    \textbf{Học phần} & Công nghệ điện đám mây và điện toán biên (CE2206) \\
+    \textbf{Mã lớp} & CE2206.CH201 \\
+    \textbf{Đề tài} & Triển khai hệ thống Multi-Agent trên Edge \\
+    \textbf{Miền ứng dụng} & Giám sát môi trường thông minh \\[0.6em]
+    \textbf{Sinh viên thực hiện} & \placeholder{Họ và tên} \\
+    \textbf{Mã số sinh viên} & \placeholder{MSSV} \\
+    \textbf{Giảng viên hướng dẫn} & \placeholder{Họ và tên giảng viên} \\
+    \textbf{Cơ sở đào tạo} & \placeholder{Tên trường / Khoa} \\[0.6em]
+    \textbf{Thời gian thực hiện} & 07/2026 -- 08/2026 \\
+    \textbf{Ngày nộp} & \placeholder{dd/mm/yyyy} \\
+  \end{tabular}
+
+  \vfill
+  {\small Số liệu thực nghiệm: \code{reports/metrics\_run.json}
+  (cửa sổ đo 40 giây, ngày 2026-07-27).\\
+  Các mục \placeholder{\ldots} cần điền trước khi in/nộp.}
+\end{titlepage}
+\newpage
+\chapter*{Tóm tắt}
+\addcontentsline{toc}{chapter}{Tóm tắt}
+
+Điện toán biên (\textit{edge computing}) đặt suy luận và điều phối gần nguồn dữ liệu nhằm giảm độ trễ và phụ thuộc đường truyền lên đám mây. Đồ án này thiết kế, triển khai và đánh giá định lượng một hệ \textbf{multi-agent} trên môi trường edge tài nguyên hạn chế (\textbf{2\,vCPU / 4\,GB RAM / CPU-only} cho mỗi agent), phục vụ miền \textbf{giám sát môi trường thông minh}.
+
+Hệ thống gồm ba agent vai trò tách biệt: (i)~\textbf{Sensor Agent} thu thập và chuẩn hóa dữ liệu cảm biến giả lập (nhiệt độ, độ ẩm, PM2.5, CO$_2$); (ii)~\textbf{Analysis Agent} thực hiện \textbf{suy luận AI cục bộ} bằng Isolation Forest xuất \textbf{ONNX}, chạy trên \textbf{ONNX Runtime}; (iii)~\textbf{Decision Agent} đóng vai \textbf{orchestrator tập trung nhẹ}, phát cảnh báo và xử lý lỗi khi Analysis timeout bằng fallback ngưỡng cứng (\code{degraded}). Toàn bộ giao tiếp đi qua \textbf{MQTT} (Eclipse Mosquitto) với schema JSON thống nhất và \code{trace\_id} để đo độ trễ end-to-end (E2E). Báo cáo trình bày đầy đủ phân tích yêu cầu, thiết kế kiến trúc/giao thức/chính sách quyết định, hiện thực Docker đúng hạn mức đề bài, cùng thực nghiệm có giả thuyết và thảo luận trade-off.
+
+Kết quả đo trên Docker Compose cho thấy: E2E latency \textbf{p50 $\approx$ 9,48\,ms}, \textbf{p95 $\approx$ 49,72\,ms}; thời gian inference ONNX \textbf{p50 $\approx$ 4,98\,ms}; RAM đỉnh quan sát của Analysis Agent khoảng \textbf{51,5\,MiB} --- còn rất nhiều dư địa so với trần 4\,GB. Khi Analysis bị ngắt, Decision vẫn phát alert \code{degraded} sau khoảng timeout cấu hình (5\,s) mà không làm sập toàn hệ. Hệ thống kèm dashboard giám sát realtime và bộ script đo lường/fault-injection phục vụ demo và tái lập thí nghiệm.
+
+\vspace{1em}
+\noindent\textbf{Từ khóa:} điện toán biên, multi-agent, MQTT, ONNX, phát hiện bất thường, giám sát môi trường, fault tolerance, đo lường hiệu năng.
+\newpage
+\tableofcontents
+\newpage
+\listoffigures
+\newpage
+\listoftables
+\newpage
+\chapter*{Danh mục từ viết tắt}
+\addcontentsline{toc}{chapter}{Danh mục từ viết tắt}
+
+\begin{tabularx}{\textwidth}{@{}lX@{}}
+\toprule
+\textbf{Viết tắt} & \textbf{Diễn giải} \\
+\midrule
+AI   & Artificial Intelligence --- Trí tuệ nhân tạo \\
+CPU  & Central Processing Unit \\
+E2E  & End-to-End --- Từ đầu đến cuối pipeline \\
+IoT  & Internet of Things \\
+JSON & JavaScript Object Notation \\
+LLM  & Large Language Model \\
+MQTT & Message Queuing Telemetry Transport \\
+ONNX & Open Neural Network Exchange \\
+p50 / p95 & Phân vị thứ 50 / 95 của phân phối độ trễ \\
+QoS  & Quality of Service \\
+RAM  & Random Access Memory \\
+RSS  & Resident Set Size \\
+VM   & Virtual Machine \\
+WS   & WebSocket \\
+\bottomrule
+\end{tabularx}
+
+%---------- Nội dung ----------
+\clearpage
+\pagenumbering{arabic}
+
+%===== Chương 1 =====
+\chapter{Mở đầu}
+
+\section{Đặt vấn đề}
+
+Sự bùng nổ của IoT và các hệ giám sát liên tục (môi trường, nhà máy, đô thị thông minh) tạo ra lượng dữ liệu cảm biến lớn ngay tại hiện trường. Nếu mọi mẫu đo đều được đẩy thô lên đám mây để suy luận rồi mới trả quyết định, hệ thống dễ gặp ba hạn chế thực tế: (i)~độ trễ tăng theo điều kiện mạng; (ii)~phụ thuộc băng thông và chi phí truyền tải; (iii)~mất khả năng phản ứng khi liên kết đám mây gián đoạn. \textbf{Điện toán biên} giải quyết một phần các hạn chế này bằng cách đặt suy luận và điều phối gần nguồn dữ liệu~\cite{shi2016edge}.
+
+Trong nhiều kịch bản biên, bài toán không còn là ``một tiến trình đơn lẻ chạy model'', mà là phối hợp nhiều thành phần chuyên trách: thu thập, phân tích, ra quyết định. Cách tổ chức này khớp với tư duy \textbf{multi-agent}: mỗi agent có vai trò rõ, trạng thái riêng và giao tiếp qua mạng. Tuy nhiên, nút biên thường bị ràng buộc mạnh về CPU, RAM và không có GPU. Do đó, lựa chọn giao thức nhẹ, mô hình AI đủ nhỏ, và cơ chế chịu lỗi khi một agent mất phản hồi trở thành điều kiện sống còn --- không phải phần ``làm đẹp'' sau khi demo chạy được.
+
+Đề tài học phần CE2206 yêu cầu hiện thực hóa các năng lực trên một cách \textbf{định lượng}~\cite{ce2206-de}: không chỉ chứng minh hệ ``chạy được'', mà phải đo tài nguyên, độ trễ (p50/p95), throughput, độ trễ end-to-end (E2E), và chứng minh ít nhất một kịch bản lỗi được xử lý an toàn (hệ không sập toàn bộ).
+
+Từ đó, đồ án đặt ra các câu hỏi nghiên cứu/triển khai cụ thể:
+\begin{enumerate}
+  \item Làm thế nào để tổ chức $\geq 3$ agent vai trò khác nhau trên môi trường edge mô phỏng (2\,vCPU / 4\,GB / CPU-only mỗi agent) mà vẫn giao tiếp \textbf{thật qua mạng}?
+  \item AI cục bộ nào đủ nhẹ để chạy ổn định trong ngân sách 4\,GB, đồng thời cho độ trễ suy luận ở mức mili-giây?
+  \item Khi agent phân tích mất phản hồi, orchestrator có thể tiếp tục ra quyết định ở chế độ suy giảm (\textit{degraded}) như thế nào?
+  \item Trade-off giữa độ trễ, tài nguyên và độ phức tạp mô hình thể hiện ra sao trên số liệu đo được?
+\end{enumerate}
+
+\section{Mục tiêu đồ án}
+
+Đồ án hướng tới các mục tiêu cụ thể sau:
+\begin{enumerate}
+  \item \textbf{Thiết kế và triển khai} hệ multi-agent ($\geq 3$ agent, vai trò khác nhau) trên môi trường edge mô phỏng bằng container/VM, mỗi agent giới hạn \textbf{2\,vCPU / 4\,GB RAM}, \textbf{CPU-only}.
+  \item \textbf{Đảm bảo giao tiếp thật qua mạng} bằng MQTT (Eclipse Mosquitto), với schema JSON thống nhất; cấm giả lập bằng gọi hàm nội bộ hay shared memory giữa các agent.
+  \item \textbf{Tích hợp suy luận AI cục bộ} trên Analysis Agent, ưu tiên mô hình tối ưu cho biên (Isolation Forest xuất ONNX, chạy ONNX Runtime CPU).
+  \item \textbf{Xây dựng điều phối tập trung nhẹ} tại Decision Agent, kèm xử lý timeout Analysis $\rightarrow$ fallback ngưỡng cứng + trạng thái \code{degraded}.
+  \item \textbf{Đánh giá định lượng} peak RAM/CPU, latency p50/p95, throughput và E2E; cung cấp số liệu tái lập được (\code{reports/metrics\_run.json}).
+  \item \textbf{Bổ sung quan sát vận hành} qua dashboard realtime phục vụ demo và giám sát, nhưng không tham gia vòng quyết định nghiệp vụ.
+\end{enumerate}
+
+\section{Phạm vi nghiên cứu}
+
+\paragraph{Trong phạm vi.}
+\begin{itemize}
+  \item Miền giám sát môi trường thông minh với bốn đại lượng: nhiệt độ, độ ẩm, PM2.5, CO$_2$; dữ liệu cảm biến \textbf{giả lập có kiểm soát} để tái lập thí nghiệm.
+  \item Ba agent nghiệp vụ (Sensor, Analysis, Decision) + MQTT broker + dashboard quan sát (tuỳ chọn khi demo).
+  \item Mô hình anomaly detection cổ điển xuất ONNX; LLM nhỏ Q4 chỉ được xem là hướng mở rộng/điểm cộng, không phải đường chính của bản nộp.
+  \item Triển khai Docker Compose với resource limit tương đương đề bài (\code{cpus: 2.0}, \code{mem\_limit: 4g}).
+\end{itemize}
+
+\paragraph{Ngoài phạm vi.}
+\begin{itemize}
+  \item Cảm biến phần cứng thật và hiệu chuẩn môi trường thực địa.
+  \item So sánh đầy đủ nhiều mức lượng tử hóa LLM / pruning trên cùng metric.
+  \item Đo năng lượng tiêu thụ và chi phí vận hành dài hạn trên thiết bị biên vật lý.
+  \item Hybrid edge--cloud production (chỉ thảo luận định hướng ở Chương~7).
+\end{itemize}
+
+\section{Phương pháp thực hiện}
+
+Đồ án kết hợp phân tích yêu cầu, thiết kế kiến trúc, hiện thực tăng dần và thực nghiệm có kiểm soát, theo các giai đoạn:
+\begin{enumerate}
+  \item \textbf{Phân tích đề bài:} chuyển ràng buộc cứng (agent, tài nguyên, MQTT, AI, fault, metrics) thành yêu cầu chức năng/phi chức năng và tiêu chí chấp nhận.
+  \item \textbf{Thiết kế:} pipeline Sensor $\rightarrow$ Analysis $\rightarrow$ Decision; schema/\code{trace\_id}; chính sách quyết định và fallback; kế hoạch đo E2E.
+  \item \textbf{Hiện thực tăng dần:} Sensor MQTT $\rightarrow$ Analysis ONNX $\rightarrow$ Decision + timeout/fallback $\rightarrow$ Docker limit $\rightarrow$ script verify/metrics/fault $\rightarrow$ dashboard.
+  \item \textbf{Thực nghiệm:} thu thập metrics cửa sổ cố định; inject lỗi Analysis; đối chiếu số liệu với mục tiêu đề và thảo luận trade-off/hạn chế.
+\end{enumerate}
+
+\section{Đóng góp chính}
+
+\begin{enumerate}
+  \item Một hệ multi-agent biên \textbf{tái lập được}, tuân thủ ngân sách 2\,vCPU/4\,GB và giao tiếp MQTT thật giữa các process/container tách biệt.
+  \item Pipeline AI cục bộ ONNX gọn ($\sim$1,16\,MB model) với độ trễ inference mili-giây trên CPU, tách biệt pha huấn luyện và pha suy luận trên biên.
+  \item Cơ chế \textbf{fault tolerance} có thể demo: timeout Analysis $\rightarrow$ alert \code{degraded}, các agent còn lại tiếp tục sống.
+  \item Bộ số liệu E2E/inference/tài nguyên kèm dashboard realtime hỗ trợ đánh giá và trình diễn.
+\end{enumerate}
+
+\section{Cấu trúc báo cáo}
+
+Báo cáo gồm bảy chương. Chương~2 trình bày cơ sở lý thuyết và công nghệ liên quan. Chương~3 phân tích yêu cầu và lý do lựa chọn miền/giải pháp. Chương~4 mô tả thiết kế kiến trúc, giao thức, mô hình AI và chính sách quyết định. Chương~5 trình bày hiện thực và triển khai. Chương~6 báo cáo thực nghiệm, phân tích số liệu và trade-off. Chương~7 kết luận và hướng phát triển.
+
+%===== Chương 2 =====
+\chapter{Cơ sở lý thuyết và công nghệ liên quan}
+
+\section{Điện toán biên và Edge AI}
+
+Điện toán biên đẩy một phần tính toán, lưu trữ và suy luận ra khỏi trung tâm dữ liệu truyền thống, tiến gần thiết bị đầu cuối~\cite{shi2016edge}. Khác với mô hình ``mọi thứ lên cloud'', biên nhằm tối ưu hoá vị trí xử lý theo ràng buộc độ trễ, băng thông và tính sẵn sàng cục bộ. Trong phổ triển khai, có thể hình dung đám mây (tính toán lớn, độ trễ cao hơn), fog/edge gần hiện trường (tính toán vừa đủ, độ trễ thấp), và thiết bị đầu cuối (cảm biến/actuator).
+
+\textbf{Edge AI} nhấn mạnh việc chạy mô hình học máy ngay trên nút biên nhằm: giảm độ trễ phản hồi; giảm lưu lượng đẩy thô lên đám mây; và duy trì khả năng suy luận khi liên kết đám mây không ổn định. Điểm mấu chốt kỹ thuật là nút biên thường bị ràng buộc mạnh về CPU, RAM, năng lượng và thiếu GPU. Do đó, lựa chọn mô hình nhỏ, runtime nhẹ và \textbf{đo lường tài nguyên dưới đúng hạn mức} là trọng tâm --- không phải phần phụ sau khi hoàn thiện chức năng.
+
+Với đồ án CE2206, ``edge'' được mô phỏng bằng container/VM có giới hạn 2\,vCPU / 4\,GB / CPU-only cho mỗi agent. Cách làm này không thay thế thiết bị biên vật lý, nhưng đủ để kiểm chứng kiến trúc, giao tiếp và trade-off hiệu năng trong điều kiện tài nguyên bị siết tương đương đề bài.
+
+\section{Hệ multi-agent và mô hình điều phối}
+
+Một \textbf{agent} là thực thể phần mềm có mục tiêu, trạng thái nội bộ và khả năng tương tác với môi trường cũng như agent khác. Hệ multi-agent phân chia trách nhiệm (chuyên môn hóa), đồng thời đặt ra hai bài toán then chốt: \textit{coordination} (ai làm gì, theo thứ tự/luồng nào) và \textit{fault tolerance} (hệ ứng xử ra sao khi một agent lỗi).
+
+\begin{table}[htbp]
+  \centering
+  \caption{Hai mô hình điều phối phổ biến và ý nghĩa với đồ án}
+  \label{tab:orchestration-models}
+  \begin{tabular}{p{2.6cm}p{5.0cm}p{5.4cm}}
+    \toprule
+    \textbf{Mô hình} & \textbf{Đặc điểm} & \textbf{Phù hợp khi} \\
+    \midrule
+    Tập trung & Một orchestrator tổng hợp thông tin và ra quyết định cuối & Pipeline rõ ràng, cần điểm kiểm soát thống nhất, quy mô vừa \\
+    Phi tập trung & Các agent đàm phán / đồng thuận ngang hàng & Hệ lớn, cần tránh single point of failure mạnh \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Đồ án chọn \textbf{điều phối tập trung nhẹ}: Decision Agent là orchestrator, nhận reading/result qua MQTT và phát alert. ``Nhẹ'' ở đây có nghĩa là không kéo theo framework orchestration nặng (CrewAI, LangGraph, AutoGen) --- các framework này tiện cho demo trên máy mạnh nhưng dễ đội RAM và làm mờ ranh giới process trên biên. Thay vào đó, vòng đời điều phối được hiện thực trực tiếp bằng subscribe MQTT, bảng \code{PendingTrace} và timer timeout.
+
+\section{MQTT trong hệ IoT/Edge}
+
+MQTT là giao thức pub/sub nhẹ, phổ biến trong IoT~\cite{oasis-mqtt}. Client publish bản tin lên \textit{topic}; broker (Eclipse Mosquitto~\cite{mosquitto}) chuyển tới các subscriber của topic đó. So với polling HTTP hoặc RPC đồng bộ chặt, MQTT phù hợp biên vì: overhead thấp; tách rời producer/consumer theo không gian và thời gian; và hỗ trợ mức QoS.
+
+Đồ án dùng MQTT v3.1.1 qua thư viện Paho~\cite{paho-mqtt}, QoS~1 cho luồng nghiệp vụ (readings/results/alerts/heartbeat) nhằm giảm mất tin mà không bắt buộc QoS~2 (chi phí bắt tay cao hơn, ít cần thiết với tần số cảm biến vài giây/lần). Broker đóng vai trò trung gian duy nhất cho giao tiếp liên agent: mọi trao đổi đều là message JSON trên topic, không có gọi hàm chéo process.
+
+\section{Phát hiện bất thường, Isolation Forest và ONNX}
+
+Giám sát môi trường thường cần phát hiện mẫu ``lạ'' so với nền vận hành bình thường (nhiệt độ/PM2.5/CO$_2$ bất thường), hơn là phân loại có nhãn đầy đủ theo kiểu học có giám sát. \textbf{Isolation Forest}~\cite{liu2008isolation} là thuật toán học không giám sát dựa trên ý tưởng: điểm bất thường dễ bị \textit{cô lập} sớm hơn trong một tập hợp cây phân hoạch ngẫu nhiên (\textit{isolation trees}). Mỗi cây chọn ngẫu nhiên một đặc trưng và một ngưỡng cắt; điểm nằm ở vùng thưa thường rơi vào lá sau ít lần cắt hơn, nên độ dài đường đi trung bình ngắn hơn. Điểm số bất thường được suy từ độ dài đường đi này: càng ngắn càng ``lạ''.
+
+Trong đồ án, các tham số chính gồm số cây $n=100$ và tỷ lệ contamination $0{,}05$ (kỳ vọng tỷ lệ bất thường khi hiệu chỉnh ngưỡng). Đặc trưng đầu vào là bốn đại lượng cảm biến đã chuẩn hóa để tránh thang đo lệch (ví dụ CO$_2$ vài trăm--nghìn ppm so với nhiệt độ vài chục $^\circ$C). Thuật toán phù hợp dữ liệu số nhiều chiều với chi phí suy luận thấp --- khớp ràng buộc CPU-only trên biên.
+
+Pipeline thực tế gồm: huấn luyện scaler + Isolation Forest trên dữ liệu synthetic ``normal'', rồi xuất toàn pipeline sang định dạng \textbf{ONNX}. ONNX là định dạng trung gian cho mô hình học máy; tại runtime biên, Analysis Agent chỉ cần ONNX Runtime~\cite{onnxruntime} trên CPU, không mang theo stack huấn luyện nặng (scikit-learn đầy đủ chỉ cần ở pha train). Cách tách này giúp image nhỏ hơn, suy luận ổn định hơn, và dễ đóng gói trong Docker~\cite{docker-compose}.
+
+\section{Đo lường hiệu năng trên biên}
+
+Đề bài yêu cầu đánh giá định lượng, không chỉ mô tả định tính. Các chỉ số then chốt gồm:
+\begin{itemize}
+  \item \textbf{Tài nguyên:} peak RAM (RSS) và CPU trung bình/đỉnh, đo dưới đúng \code{mem\_limit}/\code{cpus}.
+  \item \textbf{Độ trễ:} phân vị p50 và p95 --- ổn định hơn so với chỉ dùng trung bình khi phân phối có đuôi dài.
+  \item \textbf{Throughput:} số message (reading/result/alert) trên đơn vị thời gian.
+  \item \textbf{E2E latency:} từ sự kiện gốc gắn với \code{SensorReading} đến \code{DecisionAlert} cùng \code{trace\_id}.
+\end{itemize}
+
+Việc đo phải gắn với điều kiện chạy thật (container có limit). Đo trên máy mạnh không giới hạn rồi suy luận về khả năng biên dễ dẫn đến kết luận sai. Trong đồ án, E2E và inference được thu thập tự động qua công cụ đo subscribe MQTT; tài nguyên container được lấy từ \code{docker stats}.
+
+\section{Tóm tắt chương}
+
+Chương này thiết lập nền tảng: Edge AI đòi hỏi tối ưu tài nguyên; multi-agent cần giao thức và điều phối rõ; MQTT/ONNX phù hợp ràng buộc biên; metrics p50/p95 và E2E là chuẩn đánh giá bắt buộc. Các lựa chọn công nghệ cụ thể sẽ được biện luận tiếp ở Chương~3 và hiện thực ở các chương sau.
+
+%===== Chương 3 =====
+\chapter{Phân tích yêu cầu và lựa chọn giải pháp}
+
+\section{Yêu cầu từ đề bài}
+
+Bảng~\ref{tab:yeu-cau-de} tóm tắt ràng buộc cứng của đề và cách đồ án đáp ứng~\cite{ce2206-de}. Ba năng lực được nhấn mạnh khi chấm điểm là: (1)~tối ưu tài nguyên; (2)~phối hợp phân tán có xử lý lỗi; (3)~đánh giá định lượng trade-off.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Đối chiếu yêu cầu đề bài và giải pháp}
+  \label{tab:yeu-cau-de}
+  \begin{tabular}{p{2.3cm}p{5.0cm}p{5.5cm}}
+    \toprule
+    \textbf{Hạng mục} & \textbf{Yêu cầu} & \textbf{Giải pháp đồ án} \\
+    \midrule
+    Số agent & $\geq 3$, vai trò khác nhau & Sensor, Analysis, Decision \\
+    Phần cứng & 2\,vCPU, 4\,GB, CPU-only / agent & Docker \code{cpus: 2.0}, \code{mem\_limit: 4g} \\
+    Giao tiếp & Qua mạng thật & MQTT Mosquitto + schema JSON \\
+    AI cục bộ & $\geq 1$ agent inference trên edge & Analysis + ONNX Runtime \\
+    Điều phối & Mô tả rõ tập trung/phi tập trung & Tập trung nhẹ tại Decision \\
+    Fault & $\geq 1$ scenario, hệ không sập toàn bộ & Analysis timeout $\rightarrow$ fallback \code{degraded} \\
+    Metrics & RAM/CPU, latency p50/p95, throughput, E2E & Công cụ đo + \code{metrics\_run.json} \\
+    Sản phẩm báo cáo & Source tái lập + báo cáo kỹ thuật & Repo + báo cáo này \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Lựa chọn miền ứng dụng}
+
+Đề gợi ý nhiều hướng (vision, RAG, predictive maintenance, giám sát môi trường\ldots). Nhóm chọn \textbf{giám sát môi trường thông minh} vì các lý do sau.
+
+Thứ nhất, miền khớp ví dụ minh họa trong đề và cho phép tách bạch ba vai trò: thu thập cảm biến, phân tích bất thường, ra quyết định cảnh báo. Thứ hai, dữ liệu nhiệt độ/độ ẩm/PM2.5/CO$_2$ dễ giả lập có kiểm soát, nhờ đó thí nghiệm \textbf{tái lập được} --- điều kiện cần để báo cáo số liệu thuyết phục. Thứ ba, bài toán anomaly detection cổ điển vừa khung 4\,GB RAM; vẫn còn dư địa kỹ thuật để mở LLM nhỏ Q4 nếu cần điểm cộng sau này. Thứ tư, dễ inject lỗi (ngắt Analysis) để demo fault handling mà không cần hạ tầng phức tạp.
+
+\begin{lstlisting}[caption={Pipeline nghiệp vụ của miền giám sát môi trường},label=lst:pipeline]
+Sensor Agent  ->  Analysis Agent (AI local)  ->  Decision Agent
+  (thu thap)        (phat hien bat thuong)       (canh bao / hanh dong)
+\end{lstlisting}
+
+\section{Yêu cầu chức năng}
+
+Các yêu cầu chức năng được viết ở mức có thể kiểm chứng bằng chạy hệ và script verify:
+\begin{description}
+  \item[RF-01.] Sensor định kỳ phát bản tin cảm biến chuẩn hóa lên MQTT (chu kỳ mặc định 2\,s).
+  \item[RF-02.] Analysis nhận reading, chạy inference cục bộ, phát \code{AnalysisResult} (score, label, \code{inference\_ms}).
+  \item[RF-03.] Decision nhận kết quả, áp chính sách cảnh báo, phát \code{DecisionAlert}.
+  \item[RF-04.] Decision theo dõi timeout theo \code{trace\_id}; hết hạn thì fallback threshold và đánh dấu \code{degraded=true}.
+  \item[RF-05.] Mọi agent phát heartbeat; mọi message nghiệp vụ mang \code{trace\_id}.
+  \item[RF-06.] Message JSON sai schema bị từ chối/ghi log, \textbf{không} làm crash process.
+  \item[RF-07.] (Mở rộng) Dashboard subscribe MQTT và hiển thị trạng thái, latency, alert realtime.
+\end{description}
+
+\section{Yêu cầu phi chức năng}
+
+\begin{description}
+  \item[RNF-01. Tài nguyên.] Mỗi agent $\leq$ 2\,vCPU, $\leq$ 4\,GB RAM, không GPU; không nới limit chỉ để ``cho chạy được''.
+  \item[RNF-02. Độ trễ.] E2E ở mức mili-giây khi ổn định (mục tiêu thực nghiệm: p50 $<$ 100\,ms).
+  \item[RNF-03. Khả năng sống sót.] Mất Analysis không làm dừng Sensor/Decision; hệ vẫn phát quyết định (degraded).
+  \item[RNF-04. Tái lập.] Có script deploy, đo metrics, inject fault; số liệu gắn với file kết quả.
+  \item[RNF-05. Tách biệt tiến trình.] Cấm gộp ba agent một process để demo nhanh.
+\end{description}
+
+\section{Các phương án và quyết định thiết kế}
+
+Các quyết định chính được tóm tắt ở Bảng~\ref{tab:quyet-dinh-tk}. Phần dưới làm rõ lý do đằng sau vài lựa chọn then chốt.
+
+\paragraph{MQTT thay vì gRPC/HTTP sync.}
+Pub/sub khớp luồng ``một reading nhiều người nghe'' (Analysis, Decision, Dashboard). HTTP sync buộc caller chờ callee; khi Analysis chậm/mất, mô hình request--response dễ kéo theo timeout chồng chéo và coupling chặt hơn.
+
+\paragraph{Orchestrator tự viết thay vì framework nặng.}
+Framework multi-agent hiện đại mạnh về lập trình tác vụ/LLM, nhưng thường kéo theo dependency lớn và mô hình tiến trình khác với ``1 agent / 1 VM''. Trên trần 4\,GB, rủi ro vượt ngân sách và khó giải thích rõ luồng MQTT theo đúng đề là đáng kể.
+
+\paragraph{Isolation Forest/ONNX thay vì LLM ngay từ đầu.}
+LLM 0,5B--3B (kể cả Q4) có thể vượt hoặc tiệm cận trần RAM tuỳ runtime; độ trễ cũng khó giữ mức vài mili-giây trên CPU. Isolation Forest + ONNX cho phép chứng minh AI cục bộ đúng đề trước, rồi mới cân nhắc LLM như điểm cộng có số liệu đối chứng.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Quyết định thiết kế chính}
+  \label{tab:quyet-dinh-tk}
+  \begin{tabular}{p{2.1cm}p{3.3cm}p{3.5cm}p{3.6cm}}
+    \toprule
+    \textbf{Hạng mục} & \textbf{Chọn} & \textbf{Loại / trì hoãn} & \textbf{Lý do} \\
+    \midrule
+    Giao tiếp & MQTT & gRPC/HTTP sync & Phù hợp IoT, nhẹ, pub/sub \\
+    Điều phối & Tập trung nhẹ & Framework nặng & Đủ rõ, ít RAM \\
+    Model & Isolation Forest $\rightarrow$ ONNX & LLM 3B Q4 ngay & An toàn trần 4\,GB \\
+    Runtime & ONNX Runtime CPU & PyTorch full & Nhẹ, đủ inference \\
+    Deploy & Docker Compose limit & Nhiều process/1 container & 1 agent / 1 VM \\
+    Fallback & Threshold rules & Chỉ log im lặng & Vẫn ra quyết định \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Tóm tắt chương}
+
+Yêu cầu đề bài đã được chuyển thành RF/RNF kiểm chứng được. Miền giám sát môi trường và stack MQTT + ONNX + orchestrator tập trung nhẹ được chọn có chủ đích để cân bằng tính đúng đề, khả năng chạy trong 4\,GB, và đo được số liệu.
+
+%===== Chương 4 =====
+\chapter{Thiết kế hệ thống}
+
+\section{Kiến trúc tổng thể}
+
+Hình~\ref{fig:kien-truc} mô tả kiến trúc logic. Ba agent edge giao tiếp qua Mosquitto; dashboard chỉ quan sát (subscribe), không tham gia vòng quyết định. Mỗi agent là một container/process riêng với hạn mức 2\,vCPU / 4\,GB. Phần dùng chung chỉ gồm schema message, cấu hình và tiện ích đo lường --- không chứa logic điều phối và không cho phép các agent gọi nhau như thư viện nội bộ.
+
+\begin{figure}[htbp]
+  \centering
+\begin{tikzpicture}[
+  font=\small,
+  box/.style={
+    draw, rounded corners=2pt, align=center,
+    minimum width=3.1cm, minimum height=1.7cm,
+    inner sep=4pt
+  },
+  broker/.style={
+    draw, rounded corners=2pt, align=center,
+    minimum width=8.2cm, minimum height=0.85cm,
+    fill=gray!8
+  },
+  dashb/.style={
+    draw, rounded corners=2pt, align=center,
+    minimum width=2.6cm, minimum height=0.9cm,
+    dashed
+  },
+  arr/.style={-{Latex}, thick},
+  >={Latex}
+]
+  \node[box] (sensor) {\textbf{Sensor Agent}\\Edge VM \#1\\2\,vCPU / 4\,GB};
+  \node[box, right=1.1cm of sensor] (analysis) {\textbf{Analysis Agent}\\Edge VM \#2\\+ ONNX Runtime};
+  \node[box, right=1.1cm of analysis] (decision) {\textbf{Decision Agent}\\Edge VM \#3\\orchestrator};
+
+  \draw[arr] (sensor) -- node[above, font=\scriptsize] {MQTT readings} (analysis);
+  \draw[arr] (analysis) -- node[above, font=\scriptsize] {MQTT results} (decision);
+
+  \node[broker, below=1.4cm of analysis] (mqtt) {\textbf{Mosquitto MQTT Broker}};
+
+  \draw[arr] (sensor.south) |- ([yshift=2mm]mqtt.west);
+  \draw[arr] (analysis.south) -- (mqtt.north);
+  \draw[arr] (decision.south) |- ([yshift=2mm]mqtt.east);
+
+  \node[dashb, below=0.7cm of mqtt] (dash) {Dashboard\\(tuỳ chọn)};
+  \draw[arr, dashed] (mqtt) -- node[right, font=\scriptsize] {subscribe} (dash);
+\end{tikzpicture}
+  \caption{Kiến trúc logic hệ multi-agent trên edge}
+  \label{fig:kien-truc}
+\end{figure}
+
+Thiết kế này phản ánh đúng tinh thần đề: phân tán về tiến trình, tập trung nhẹ về điều phối, và mọi tương tác liên agent đều quan sát được trên MQTT.
+
+\section{Vai trò từng agent}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Phân công trách nhiệm}
+  \label{tab:vai-tro}
+  \begin{tabular}{p{2.5cm}p{5.5cm}p{5.0cm}}
+    \toprule
+    \textbf{Agent} & \textbf{Được phép} & \textbf{Không được phép} \\
+    \midrule
+    \agent{sensor\_agent} & Giả lập/chuẩn hóa cảm biến; publish reading + heartbeat & Chạy model AI; ra quyết định cảnh báo \\
+    \agent{analysis\_agent} & Subscribe reading; inference cục bộ; publish result & Điều phối toàn hệ; bỏ qua MQTT \\
+    \agent{decision\_agent} & Policy/alert; timeout fallback; heartbeat/control & Thay thế hoàn toàn AI chính (chỉ fallback khi degraded) \\
+    \agent{dashboard} & Quan sát MQTT, hiển thị metrics/alert & Tham gia vòng quyết định nghiệp vụ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Ranh giới trách nhiệm giúp tránh ``agent thần thánh'' ôm hết việc, đồng thời làm rõ điểm đo: Analysis chịu trách nhiệm độ trễ inference; Decision chịu trách nhiệm E2E và degraded mode.
+
+\section{Luồng xử lý end-to-end}
+
+\paragraph{Luồng bình thường.}
+\begin{enumerate}
+  \item Sensor tạo \code{SensorReading} (có \code{trace\_id}, \code{ts}) và publish lên \code{edge/sensor/readings}.
+  \item Analysis parse reading, chạy ONNX, đo \code{inference\_ms}, publish \code{AnalysisResult} cùng \code{trace\_id}.
+  \item Decision map kết quả sang \code{DecisionAlert} (\code{severity}, \code{action}, \code{reason}, \code{e2e\_latency\_ms}).
+  \item Dashboard (nếu bật) nhận và hiển thị realtime phục vụ quan sát.
+\end{enumerate}
+
+\paragraph{Luồng khi Analysis không phản hồi.}
+\begin{enumerate}
+  \item Decision lưu \code{PendingTrace} khi nhận reading (theo \code{trace\_id}).
+  \item Hết \code{analysis\_timeout\_sec} (mặc định 5\,s) mà chưa có result $\rightarrow$ gọi \code{threshold\_fallback}.
+  \item Publish alert với \code{severity=degraded}, \code{degraded=true}.
+  \item Sensor và Decision tiếp tục chạy; Analysis có thể được khởi động lại sau.
+  \item Result đến muộn sau khi đã fallback được \textbf{bỏ qua} để tránh double-alert cho cùng \code{trace\_id}.
+\end{enumerate}
+
+Cơ chế trên hiện thực yêu cầu ``hệ không sập toàn bộ'': mất một mắt xích AI vẫn còn đường ra quyết định (suy giảm chất lượng), đồng thời làm rõ trade-off độ trễ khi lỗi (E2E bị chi phối bởi timeout).
+
+Hình~\ref{fig:seq-normal} và Hình~\ref{fig:seq-fault} tóm tắt hai luồng dưới dạng sơ đồ tuần tự.
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tikzpicture}[
+    font=\small,
+    actor/.style={font=\bfseries\small, align=center},
+    life/.style={draw, thick},
+    msg/.style={-{Latex}, thick},
+    lab/.style={font=\scriptsize, fill=white, inner sep=1pt}
+  ]
+    \foreach \x/\name in {0/Sensor, 3.4/Analysis, 6.8/Decision} {
+      \node[actor] at (\x,0) {\name};
+      \draw[life] (\x,-0.35) -- (\x,-5.0);
+    }
+    \draw[msg] (0,-1.0) -- node[lab,above] {1. SensorReading (trace\_id)} (3.4,-1.0);
+    \draw[msg] (0,-1.6) -- node[lab,above] {1b. cùng reading $\rightarrow$ PendingTrace} (6.8,-1.6);
+    \node[lab] at (3.4,-2.3) {2. ONNX + đo inference\_ms};
+    \draw[msg] (3.4,-3.1) -- node[lab,above] {3. AnalysisResult} (6.8,-3.1);
+    \node[lab] at (6.8,-3.9) {4. map policy, tính e2e\_latency\_ms};
+    \node[lab] at (6.8,-4.5) {5. publish DecisionAlert, xoá pending};
+  \end{tikzpicture}
+  \caption{Sơ đồ tuần tự --- luồng E2E bình thường}
+  \label{fig:seq-normal}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tikzpicture}[
+    font=\small,
+    actor/.style={font=\bfseries\small, align=center},
+    life/.style={draw, thick},
+    msg/.style={-{Latex}, thick},
+    miss/.style={-{Latex}, thick, dashed},
+    lab/.style={font=\scriptsize, fill=white, inner sep=1pt}
+  ]
+    \foreach \x/\name in {0/Sensor, 3.4/Analysis, 6.8/Decision} {
+      \node[actor] at (\x,0) {\name};
+      \draw[life] (\x,-0.35) -- (\x,-5.2);
+    }
+    \draw[dashed] (3.4,-0.35) -- (3.4,-5.2);
+    \draw[msg] (0,-1.0) -- node[lab,above] {1. reading + trace\_id} (6.8,-1.0);
+    \draw[miss] (0,-1.7) -- node[lab,above] {Analysis không trả result} (3.4,-1.7);
+    \node[lab] at (6.8,-2.5) {2. hết analysis\_timeout\_sec};
+    \node[lab] at (6.8,-3.2) {3. threshold\_fallback};
+    \node[lab] at (6.8,-3.9) {4. alert degraded=true};
+    \draw[miss] (3.4,-4.7) -- node[lab,above] {5. result muộn: bỏ qua} (6.8,-4.7);
+  \end{tikzpicture}
+  \caption{Sơ đồ tuần tự --- Analysis timeout và chế độ degraded}
+  \label{fig:seq-fault}
+\end{figure}
+
+\section{Thiết kế giao thức MQTT và schema}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Topics MQTT}
+  \label{tab:topics}
+  \begin{tabular}{lll}
+    \toprule
+    \textbf{Topic} & \textbf{Publisher} & \textbf{Subscriber} \\
+    \midrule
+    \code{edge/sensor/readings} & sensor & analysis, decision, dashboard \\
+    \code{edge/analysis/results} & analysis & decision, dashboard \\
+    \code{edge/decision/alerts} & decision & dashboard / log \\
+    \code{edge/system/heartbeat} & mọi agent & decision, dashboard \\
+    \code{edge/system/control} & decision & sensor, analysis \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Nguyên tắc schema message:
+\begin{itemize}
+  \item Payload JSON UTF-8; các kiểu tương ứng \code{SensorReading}, \code{AnalysisResult}, \code{DecisionAlert}, \code{Heartbeat}.
+  \item Field bắt buộc được kiểm tra khi nhận; thiếu field thì từ chối bản tin, vòng lặp agent vẫn sống.
+  \item \code{trace\_id} là khóa nối E2E giữa reading $\rightarrow$ result $\rightarrow$ alert.
+  \item QoS~1 cho luồng nghiệp vụ.
+\end{itemize}
+
+Decision subscribe cả readings và results: readings dùng để mở \code{PendingTrace} và làm đầu vào fallback; results dùng để quyết định theo AI khi còn kịp trước timeout.
+
+\section{Thiết kế mô hình AI cục bộ}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Thông số mô hình}
+  \label{tab:model}
+  \begin{tabular}{ll}
+    \toprule
+    \textbf{Thuộc tính} & \textbf{Giá trị} \\
+    \midrule
+    Thuật toán & Isolation Forest + StandardScaler \\
+    Thư viện huấn luyện & scikit-learn~\cite{pedregosa2011scikit} \\
+    Xuất mô hình & skl2onnx $\rightarrow$ ONNX ($\sim$1,16\,MB) \\
+    Runtime suy luận & ONNX Runtime (CPU) \\
+    Đặc trưng & \code{temperature\_c}, \code{humidity\_pct}, \code{pm25\_ugm3}, \code{co2\_ppm} \\
+    Huấn luyện & 2000 mẫu normal; contamination $=0{,}05$; 100 cây \\
+    Kiểm tra synthetic & Normal $\approx$ 96\%; anomaly $\approx$ 100\% \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Lựa chọn ưu tiên độ nhỏ và độ trễ thấp hơn độ phức tạp biểu diễn. Kết quả kiểm tra nhanh trên synthetic chỉ mang tính \textit{smoke test} của pipeline train/export; không được suy diễn thành độ chính xác trên dữ liệu thực địa. LLM nhỏ (ví dụ Qwen2.5-0.5B Q4) là hướng điểm cộng có kiểm soát tài nguyên, không phải đường chính của bản nộp.
+
+\section{Chính sách quyết định và ngưỡng fallback}
+
+Khi có kết quả AI kịp thời:
+\begin{itemize}
+  \item \code{is\_anomaly=false} $\rightarrow$ \code{severity=info}, \code{action=continue\_monitoring}.
+  \item \code{is\_anomaly=true} $\rightarrow$ \code{action=raise\_alert}; \code{critical} nếu score $\geq 0{,}05$, ngược lại \code{warning}.
+\end{itemize}
+
+Khi timeout, Decision áp ngưỡng cứng từ cấu hình:
+\begin{itemize}
+  \item Nhiệt độ $\geq 40\,^\circ$C;
+  \item PM2.5 $\geq 75\,\mu$g/m$^3$;
+  \item CO$_2$ $\geq 1500$\,ppm.
+\end{itemize}
+Vượt ngưỡng $\rightarrow$ alert degraded kèm lý do chi tiết; không vượt $\rightarrow$ vẫn phát bản tin degraded ghi nhận timeout nhưng ngưỡng OK. Cách làm này bảo đảm luôn có quyết định quan sát được trên topic alerts, kể cả khi AI im lặng.
+
+\section{Thiết kế đo lường và quan sát}
+
+Hệ có hai lớp đo:
+\begin{itemize}
+  \item \textbf{Trong agent:} \code{MetricsCollector} (\code{psutil}) ghi mẫu theo chu kỳ cấu hình.
+  \item \textbf{Ngoài agent:} công cụ đo subscribe MQTT, ghép bản tin theo \code{trace\_id}, tính p50/p95 E2E \& inference, kết hợp \code{docker stats}.
+\end{itemize}
+Dashboard (Flask + Flask-SocketIO + Chart.js) subscribe các topic và đẩy WebSocket tới trình duyệt để demo trực quan. Dashboard là lớp quan sát, không thay thế file metrics phục vụ báo cáo.
+
+\section{Tóm tắt chương}
+
+Kiến trúc ba agent + MQTT + orchestrator tập trung nhẹ bảo đảm đúng ràng buộc đề; schema/\code{trace\_id} phục vụ E2E; ONNX phục vụ AI biên; timeout/fallback phục vụ fault tolerance; metrics/dashboard phục vụ đánh giá và demo.
+
+%===== Chương 5 =====
+\chapter{Hiện thực và triển khai}
+
+\section{Môi trường công nghệ}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Stack công nghệ}
+  \label{tab:stack}
+  \begin{tabular}{ll}
+    \toprule
+    \textbf{Thành phần} & \textbf{Công nghệ} \\
+    \midrule
+    Ngôn ngữ & Python 3.11 \\
+    Broker & Eclipse Mosquitto 2 \\
+    MQTT client & paho-mqtt~\cite{paho-mqtt} \\
+    AI & scikit-learn, skl2onnx, onnxruntime \\
+    Đóng gói & Docker / Docker Compose~\cite{docker-compose} \\
+    Quan sát & Flask, Flask-SocketIO, Chart.js \\
+    Đo tài nguyên & psutil, docker stats \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Stack được chọn theo tiêu chí ``đủ làm đúng đề trên biên'': Python phổ biến cho IoT/AI nhẹ; Mosquitto ổn định; ONNX Runtime cho inference CPU; Compose để siết \code{cpus}/\code{mem\_limit} thống nhất giữa các máy.
+
+\section{Cấu trúc triển khai}
+
+Mã nguồn được tổ chức theo nguyên tắc \textbf{một agent --- một tiến trình}: thư mục riêng cho Sensor, Analysis, Decision; broker MQTT; cấu hình chung; model ONNX; công cụ đo/verify/fault; và dashboard quan sát. Quy ước phát triển nhấn mạnh: không gọi chéo giữa agent, không nới resource limit để ``cho chạy được'', message sai schema không được làm sập process, mọi luồng nghiệp vụ mang \code{trace\_id}, Decision phải có timeout/fallback.
+
+\section{Hiện thực các agent}
+
+\subsection{Sensor Agent}
+Sensor đọc chu kỳ lấy mẫu (mặc định 2\,s) và tỷ lệ sinh mẫu bất thường giả lập, tạo vector cảm biến, gán \code{trace\_id} cùng dấu thời gian, rồi publish QoS~1 lên topic readings. Định kỳ gửi heartbeat để lớp quan sát biết agent còn sống. Sensor \textbf{không} chạy model và \textbf{không} tự cảnh báo --- đúng ranh giới trách nhiệm.
+
+\subsection{Analysis Agent}
+Analysis nạp mô hình ONNX lúc khởi động, subscribe readings và kiểm tra schema khi nhận bản tin. Với mỗi mẫu hợp lệ: đo thời gian suy luận, sinh kết quả (score, nhãn bất thường) và publish. Bản tin malformed được ghi nhận rồi bỏ qua; vòng lặp MQTT không bị phá. Thiết kế này cô lập rủi ro dữ liệu bẩn khỏi rủi ro sập process.
+
+\subsection{Decision Agent}
+Decision subscribe readings, results và heartbeat. Khi có reading, mở bản ghi chờ theo \code{trace\_id}. Vòng kiểm tra timeout định kỳ thực hiện logic rút gọn như sau:
+
+\begin{lstlisting}[caption={Gia ma --- timeout va fallback tai Decision},label=lst:timeout]
+voi moi pending[trace_id]:
+  neu (now - received_at) < timeout: tiep tuc
+  nguoc lai:
+    ap dung nguong fallback tren reading
+    phat DecisionAlert (degraded=true, e2e_latency)
+    xoa pending[trace_id]   # result den muon se bi bo qua
+\end{lstlisting}
+
+Khi result đến đúng hạn, Decision map sang mức cảnh báo/hành động theo kết quả AI, tính \code{e2e\_latency\_ms}, rồi xoá pending tương ứng.
+
+\section{Huấn luyện và đóng gói model}
+
+Pha huấn luyện sinh dữ liệu synthetic, huấn luyện scaler + Isolation Forest, xuất ONNX và metadata. Khi build image triển khai, model được chuẩn bị sẵn để Analysis luôn có file suy luận trên mọi máy, tránh phụ thuộc thao tác thủ công. Pha train dùng scikit-learn; pha serve trên biên chỉ cần ONNX Runtime.
+
+\section{Triển khai Docker và giới hạn tài nguyên}
+
+Mỗi service agent trong Compose khai báo giới hạn:
+\begin{lstlisting}[caption={Gioi han tai nguyen moi agent}]
+cpus: 2.0
+mem_limit: 4g
+memswap_limit: 4g
+\end{lstlisting}
+Không gắn GPU. Broker Mosquitto dùng image chính thức; các agent dùng image chung với \code{command} khác nhau để khởi động đúng entrypoint. Dashboard giới hạn nhẹ hơn (quan sát, không tính là agent đề bài): khoảng 0,5\,CPU / 256\,MB; trên macOS, cổng host thường map \textbf{5001} vì cổng 5000 hay bị hệ điều hành chiếm.
+
+Việc siết limit ngay từ Compose buộc mọi số liệu tài nguyên trong Chương~6 phản ánh đúng điều kiện đề, thay vì phản ánh máy host ``thoải mái''.
+
+\section{Công cụ kiểm thử và fault injection}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Nhóm kiểm thử phục vụ tái lập thí nghiệm}
+  \label{tab:scripts}
+  \begin{tabular}{p{5.0cm}p{8.0cm}}
+    \toprule
+    \textbf{Nhóm} & \textbf{Mục đích} \\
+    \midrule
+    Verify E2E & Chứng minh pipeline reading $\rightarrow$ result $\rightarrow$ alert \\
+    Fault injection & Dừng Analysis để kích hoạt chế độ degraded \\
+    Verify degraded & Assert alert có \code{degraded=true} sau timeout \\
+    Thu thập metrics & Ghi p50/p95, throughput, \code{docker stats} ra file kết quả \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Các bước trên biến RF/RNF thành kiểm thử vận hành lặp lại được: không chỉ ``nhìn log thấy có vẻ đúng'', mà kiểm chứng được số alert, cờ \code{degraded}, và latency.
+
+\section{Quy trình tái lập (tóm tắt)}
+
+\begin{enumerate}
+  \item Khởi động toàn bộ service với resource limit đúng đề.
+  \item Chạy verify pipeline E2E ở chế độ ổn định.
+  \item Thu thập metrics trong cửa sổ thời gian cố định.
+  \item Inject lỗi Analysis, verify alert degraded, rồi khởi động lại Analysis.
+\end{enumerate}
+Quy trình này bảo đảm thí nghiệm \textbf{tái lập được} và gắn trực tiếp với số liệu Chương~6.
+
+\section{Tóm tắt chương}
+
+Hiện thực bám sát thiết kế: ba tiến trình tách biệt, MQTT + schema, ONNX cục bộ, timeout/fallback, resource limit đúng đề, kèm verify/metrics/fault và dashboard quan sát.
+
+%===== Chương 6 =====
+\chapter{Thực nghiệm và đánh giá}
+
+\section{Mục tiêu và giả thuyết thực nghiệm}
+
+Thực nghiệm nhằm trả lời bốn câu hỏi, tương ứng giả thuyết làm việc:
+\begin{enumerate}
+  \item \textbf{H1 --- Tài nguyên:} Hệ chạy ổn định trong giới hạn 2\,vCPU/4\,GB/CPU-only; RAM đỉnh mỗi agent $\ll$ 4\,GB.
+  \item \textbf{H2 --- Độ trễ:} E2E và inference ở mức chấp nhận được cho giám sát gần realtime (kỳ vọng p50 E2E $<$ 100\,ms khi đủ ba agent).
+  \item \textbf{H3 --- Chịu lỗi:} Khi Analysis bị dừng, Decision vẫn phát alert \code{degraded} và Sensor/Decision không chết theo.
+  \item \textbf{H4 --- Trade-off:} Có đánh đổi rõ giữa độ bền limping-mode và độ trễ E2E khi lỗi (bị chi phối bởi timeout).
+\end{enumerate}
+
+\section{Môi trường và phương pháp đo}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Cấu hình thí nghiệm (cửa sổ ổn định)}
+  \label{tab:cau-hinh-do}
+  \begin{tabular}{ll}
+    \toprule
+    \textbf{Tham số} & \textbf{Giá trị} \\
+    \midrule
+    Nền tảng & Docker Compose \\
+    Giới hạn mỗi agent & 2\,vCPU, 4\,GB RAM, CPU-only \\
+    Cửa sổ đo & 40 giây \\
+    Chu kỳ sensor & 2 giây \\
+    Timeout Analysis & 5 giây \\
+    Ngày đo (bản ghi chính) & 2026-07-27 \\
+    Nguồn số liệu & \code{reports/metrics\_run.json} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+E2E latency được định nghĩa là khoảng thời gian từ \code{ts} của \code{SensorReading} đến thời điểm Decision phát \code{DecisionAlert} cùng \code{trace\_id}. Inference latency là \code{inference\_ms} do Analysis tự đo quanh lần gọi ONNX Runtime. Throughput suy từ số bản tin trong cửa sổ chia cho \code{duration\_sec}. Tài nguyên lấy mẫu \code{docker stats} trong cùng cửa sổ.
+
+\section{Kết quả tài nguyên}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Mẫu \texttt{docker stats} cuối cửa sổ đo}
+  \label{tab:docker-stats}
+  \begin{tabular}{lrrr}
+    \toprule
+    \textbf{Thành phần} & \textbf{CPU (mẫu)} & \textbf{RAM} & \textbf{Giới hạn} \\
+    \midrule
+    \agent{sensor\_agent} & 0,08\% & 20,89\,MiB & 4\,GiB \\
+    \agent{analysis\_agent} & 0,21\% & 51,54\,MiB & 4\,GiB \\
+    \agent{decision\_agent} & 0,19\% & 20,11\,MiB & 4\,GiB \\
+    \agent{mqtt-broker} & 0,54\% & 2,74\,MiB & (host) \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\noindent\textbf{Nhận xét (H1).} Toàn bộ agent dùng RAM $\ll$ 4\,GB; Analysis cao nhất $\approx$ 51,5\,MiB ($\approx$ 1,26\% hạn mức). CPU mẫu cũng rất thấp ở chu kỳ cảm biến 2\,s. Kết quả xác nhận ngân sách đề bài còn dư địa lớn với stack MQTT + ONNX hiện tại; phần dư địa này vừa là điểm mạnh (an toàn tài nguyên), vừa là cơ sở để thảo luận mở rộng model phức tạp hơn \textit{nếu} đo lại dưới cùng limit.
+
+\section{Kết quả độ trễ và throughput}
+
+Bảng~\ref{tab:tong-hop-thuc-nghiem} tổng hợp toàn bộ chỉ số chính của cửa sổ ổn định (tránh tách nhiều bảng lặp cùng một bộ số). Hình~\ref{fig:latency-bar} và Hình~\ref{fig:ram-bar} trực quan hóa độ trễ và RAM.
+
+\begin{table}[htbp]
+  \centering
+  \caption{Tổng hợp kết quả thực nghiệm (Docker Compose, mỗi agent 2\,vCPU / 4\,GB, CPU-only; cửa sổ 40\,s)}
+  \label{tab:tong-hop-thuc-nghiem}
+  \begin{tabular}{llr}
+    \toprule
+    \textbf{Nhóm chỉ số} & \textbf{Chỉ số} & \textbf{Giá trị} \\
+    \midrule
+    \multirow{4}{*}{Tài nguyên}
+      & RAM \texttt{sensor\_agent} & 20,89\,MiB \\
+      & RAM \texttt{analysis\_agent} & 51,54\,MiB \\
+      & RAM \texttt{decision\_agent} & 20,11\,MiB \\
+      & RAM \texttt{mqtt-broker} & 2,74\,MiB \\
+    \midrule
+    \multirow{5}{*}{Độ trễ}
+      & E2E latency p50 & \textbf{9,48\,ms} \\
+      & E2E latency p95 & \textbf{49,72\,ms} \\
+      & E2E latency trung bình / max & 16,7 / 52,3\,ms \\
+      & Inference ONNX p50 & \textbf{4,98\,ms} \\
+      & Inference ONNX p95 & \textbf{6,94\,ms} \\
+    \midrule
+    \multirow{3}{*}{Throughput}
+      & Readings / results / alerts (40\,s) & 21 / 21 / 21 \\
+      & Thông lượng mỗi tầng & 0,525\,msg/s \\
+      & Alert \texttt{degraded} (ổn định) & 0 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tikzpicture}
+    \begin{axis}[
+      ybar,
+      bar width=12pt,
+      width=0.92\textwidth,
+      height=5.2cm,
+      ylabel={Độ trễ (ms)},
+      symbolic x coords={E2E p50,E2E p95,E2E max,Infer p50,Infer p95},
+      xtick=data,
+      xticklabel style={font=\small, rotate=15, anchor=east},
+      ymin=0, ymax=60,
+      nodes near coords,
+      nodes near coords style={font=\scriptsize},
+      every axis plot/.append style={fill=gray!55},
+    ]
+      \addplot coordinates {
+        (E2E p50,9.48) (E2E p95,49.72) (E2E max,52.3)
+        (Infer p50,4.98) (Infer p95,6.94)
+      };
+    \end{axis}
+  \end{tikzpicture}
+  \caption{So sánh phân vị độ trễ E2E và inference ONNX (cửa sổ 40\,s)}
+  \label{fig:latency-bar}
+\end{figure}
+
+\begin{figure}[htbp]
+  \centering
+  \begin{tikzpicture}
+    \begin{axis}[
+      ybar,
+      bar width=18pt,
+      width=0.85\textwidth,
+      height=4.8cm,
+      ylabel={RAM (MiB)},
+      symbolic x coords={sensor,analysis,decision,mqtt},
+      xtick=data,
+      ymin=0, ymax=60,
+      nodes near coords,
+      nodes near coords style={font=\scriptsize},
+      every axis plot/.append style={fill=gray!40},
+    ]
+      \addplot coordinates {
+        (sensor,20.89) (analysis,51.54) (decision,20.11) (mqtt,2.74)
+      };
+    \end{axis}
+  \end{tikzpicture}
+  \caption{RAM quan sát theo thành phần (mẫu \texttt{docker stats} cuối cửa sổ)}
+  \label{fig:ram-bar}
+\end{figure}
+
+\noindent\textbf{Nhận xét (H2).} Số readings/results/alerts khớp 21/21/21 trong 40\,s cho thấy pipeline không mất tầng khi ổn định; throughput $\approx 0{,}525$\,msg/s khớp chu kỳ sensor 2\,s. E2E p50 rất thấp ($\approx$ 9,5\,ms); inference chiếm phần đáng kể trong ngân sách thời gian đó ($\approx$ 5\,ms).
+
+\paragraph{Phân tích đuôi p95.} E2E p95 (49,72\,ms) cao gấp khoảng 5 lần p50 (9,48\,ms), trong khi inference p95 chỉ $\approx$ 6,9\,ms --- gần với p50 inference. Điều này cho thấy đuôi E2E \textbf{không} chủ yếu đến từ ONNX, mà từ jitter ngoài suy luận: lập lịch container/OS, hàng đợi MQTT, và đồng bộ thời điểm đo theo \code{trace\_id}. Max E2E (52,3\,ms) sát p95, gợi ý đuôi chưa cực đoan trong mẫu $n=21$, nhưng kích thước mẫu còn nhỏ nên khoảng tin cậy của p95 chưa chặt. Dù vậy, cả p95 lẫn max vẫn $<$ 100\,ms trong thí nghiệm --- phù hợp giám sát môi trường không đòi hỏi điều khiển vòng kín cực nhanh.
+
+\section{Kết quả kịch bản lỗi}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Fault path --- dừng Analysis Agent}
+  \label{tab:fault}
+  \begin{tabular}{p{5.0cm}p{8.0cm}}
+    \toprule
+    \textbf{Quan sát} & \textbf{Kết quả} \\
+    \midrule
+    Hành vi Decision & Alert \code{degraded=true} sau $\sim$timeout 5\,s \\
+    E2E khi degraded (demo) & Khoảng 5010--5155\,ms \\
+    Sensor / Decision & Tiếp tục sống và vận hành \\
+    Phục hồi & \code{docker compose start analysis\_agent} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\noindent\textbf{Nhận xét (H3, H4).} Khi Analysis bị \code{docker stop}, Decision vẫn phát quyết định sau khoảng timeout cấu hình; Sensor tiếp tục publish. E2E khi degraded bị chi phối bởi 5\,s timeout (khoảng 5,0--5,2\,s), khác hoàn toàn chế độ bình thường mili-giây. Đây chính là trade-off độ bền limping-mode $\leftrightarrow$ độ trễ khi lỗi: có thể chỉnh \code{analysis\_timeout\_sec} theo SLA, nhưng timeout quá nhỏ sẽ tăng false-degraded khi Analysis chỉ chậm nhất thời.
+
+\section{Phân tích trade-off}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Phân tích trade-off}
+  \label{tab:tradeoff}
+  \begin{tabular}{p{4.0cm}p{9.0cm}}
+    \toprule
+    \textbf{Trục} & \textbf{Quan sát} \\
+    \midrule
+    Độ trễ $\leftrightarrow$ tài nguyên & E2E p50 $\sim$10\,ms với RAM agent $<$ 55\,MiB; còn nhiều headroom trong 4\,GB \\
+    Chất lượng $\leftrightarrow$ độ phức tạp & Isolation Forest đủ synthetic; chưa phản ánh nhiễu/drift thực địa \\
+    Độ bền $\leftrightarrow$ độ trễ khi lỗi & Timeout 5\,s giữ hệ sống nhưng kéo E2E khi degraded \\
+    Framework orchestration & Tự viết vòng MQTT tránh overhead framework nặng trên biên \\
+    Quan sát vận hành & Dashboard tốt cho demo; số liệu báo cáo lấy từ metrics file \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Nhìn tổng thể, đồ án ưu tiên chứng minh ba trụ cột đề bài (tài nguyên, phối hợp/fault, đo lường) bằng một stack đủ nhỏ và đủ rõ, thay vì tối đa hoá độ phức tạp mô hình ngay từ đầu.
+
+\section{Đối chiếu với mục tiêu đề bài}
+
+\begin{table}[htbp]
+  \centering
+  \caption{Đối chiếu mục tiêu đề bài}
+  \label{tab:doi-chieu}
+  \begin{tabular}{p{8.5cm}l}
+    \toprule
+    \textbf{Mục tiêu} & \textbf{Mức đạt} \\
+    \midrule
+    $\geq 3$ agent vai trò khác nhau, 2c/4GB & Đạt \\
+    MQTT thật, không shared memory giả lập & Đạt \\
+    AI cục bộ trên edge & Đạt (ONNX) \\
+    Điều phối tập trung được mô tả và hiện thực & Đạt \\
+    $\geq 1$ fault scenario & Đạt \\
+    Metrics p50/p95, throughput, E2E & Đạt \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\section{Thảo luận hạn chế thực nghiệm}
+
+\begin{enumerate}
+  \item Cảm biến giả lập --- chưa đánh giá drift, nhiễu cảm biến, hay thiếu mẫu thực địa; precision/recall trên dữ liệu thật chưa có.
+  \item Cửa sổ 40\,s đủ chứng minh pipeline và số liệu chính, nhưng chưa phải stress test dài hạn hay bão tải.
+  \item Chưa so sánh ONNX với LLM Q4 / hybrid cloud trên cùng bộ metric.
+  \item Chưa đo năng lượng, nhiệt độ thiết bị, hay triển khai trên phần cứng biên vật lý.
+  \item Mẫu \code{docker stats} là điểm cuối cửa sổ; phân tích CPU/RAM theo chuỗi thời gian dày hơn sẽ làm rõ spike (nếu có).
+\end{enumerate}
+
+Các hạn chế trên không phủ nhận kết quả đã đạt theo tiêu chí đề, nhưng xác định biên độ suy luận hợp lệ của số liệu và định hướng Chương~7.
+
+\section{Tóm tắt chương}
+
+Thực nghiệm ủng hộ H1--H4 trong phạm vi thiết lập hiện tại: hệ gọn trong ngân sách biên, độ trễ mili-giây khi đủ ba agent, và chế độ degraded hoạt động đúng khi mất Analysis. Trade-off và hạn chế được nêu rõ để tránh kết luận vượt quá điều kiện thí nghiệm.
+
+%===== Chương 7 =====
+\chapter{Kết luận và hướng phát triển}
+
+\section{Kết luận}
+
+Đồ án đã thiết kế, triển khai và đánh giá định lượng một hệ \textbf{multi-agent trên edge} cho miền giám sát môi trường thông minh, bám các ràng buộc cốt lõi của học phần CE2206:
+\begin{enumerate}
+  \item Ba agent tách biệt về vai trò và tiến trình, giới hạn \textbf{2\,vCPU / 4\,GB}, CPU-only.
+  \item Giao tiếp \textbf{MQTT} với schema thống nhất và \code{trace\_id} phục vụ truy vết E2E.
+  \item Suy luận AI cục bộ bằng \textbf{Isolation Forest xuất ONNX}, inference p50 $\approx$ 5\,ms.
+  \item Điều phối \textbf{tập trung nhẹ} tại Decision Agent, kèm fallback khi Analysis timeout.
+  \item Đánh giá định lượng: E2E p50/p95 $\approx$ 9,5/49,7\,ms; RAM đỉnh Analysis $\approx$ 51,5\,MiB.
+\end{enumerate}
+
+Kết quả cho thấy, với lựa chọn giao thức và mô hình phù hợp, hệ multi-agent Edge AI có thể đồng thời hướng tới \textbf{độ trễ thấp}, \textbf{tiêu thụ tài nguyên nhỏ}, và \textbf{khả năng chịu lỗi limping-mode} --- ba trụ cột đề bài nhấn mạnh --- trong điều kiện thí nghiệm đã mô tả.
+
+\section{Hướng phát triển}
+
+\begin{enumerate}
+  \item \textbf{Dữ liệu thật:} nối cảm biến vật lý hoặc tập dữ liệu môi trường công khai; đánh giá lại precision/recall và hiệu chuẩn ngưỡng fallback.
+  \item \textbf{Điểm cộng đề bài:} so sánh ONNX với LLM nhỏ Q4 (0,5B--1,5B); đo RAM/latency theo mức quantize dưới cùng limit 4\,GB.
+  \item \textbf{Hybrid edge--cloud:} đẩy summary/alert lên cloud khi có mạng; giữ quyết định tối thiểu trên biên khi mất mạng.
+  \item \textbf{Vận hành:} bổ sung xác thực MQTT, TLS, lưu trữ alert dài hạn và cảnh báo vận hành.
+  \item \textbf{Đo năng lượng:} ước lượng joule/inference trên thiết bị biên thật nếu có phần cứng.
+  \item \textbf{Mở rộng thí nghiệm:} cửa sổ dài hơn, thay đổi chu kỳ sensor/timeout, phân tích chuỗi thời gian CPU/RAM.
+\end{enumerate}
+
+\section{Bài học kinh nghiệm}
+
+\begin{itemize}
+  \item Đo metrics \textbf{từ sớm} giúp tránh tình trạng ``chạy được nhưng không chứng minh được''.
+  \item Giữ agent tách process ngay từ đầu tránh nợ kỹ thuật khi nộp theo tiêu chí VM/container riêng.
+  \item Ưu tiên model nhỏ đủ đúng đề trước khi tối ưu điểm cộng bằng LLM; mọi mở rộng phải đo lại dưới đúng hạn mức.
+  \item Fault path cần được thiết kế như một luồng nghiệp vụ (timeout + fallback + chống double-alert), không chỉ là ``bắt exception rồi log''.
+\end{itemize}
+
+%---------- Phần cuối ----------
+\bibliographystyle{plain}
+\bibliography{refs}
+
+\end{document}

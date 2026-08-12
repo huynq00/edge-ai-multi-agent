@@ -1,0 +1,31 @@
+% Bảng tổng hợp kết quả thực nghiệm — Edge AI Multi-Agent (CE2206)
+% Yêu cầu: \usepackage{multirow,booktabs}
+\begin{table}[htbp]
+  \centering
+  \caption{Tổng hợp kết quả thực nghiệm hệ multi-agent trên edge
+    (Docker Compose, mỗi agent 2\,vCPU / 4\,GB RAM, CPU-only)}
+  \label{tab:tong-hop-thuc-nghiem}
+  \begin{tabular}{llr}
+    \toprule
+    \textbf{Nhóm chỉ số} & \textbf{Chỉ số} & \textbf{Giá trị} \\
+    \midrule
+    \multirow{4}{*}{Tài nguyên}
+      & RAM \texttt{sensor\_agent} & 20,89\,MiB \\
+      & RAM \texttt{analysis\_agent} & 51,54\,MiB \\
+      & RAM \texttt{decision\_agent} & 20,11\,MiB \\
+      & RAM \texttt{mqtt-broker} & 2,74\,MiB \\
+    \midrule
+    \multirow{5}{*}{Độ trễ}
+      & E2E latency p50 & 9,48\,ms \\
+      & E2E latency p95 & 49,72\,ms \\
+      & E2E latency trung bình / max & 16,7 / 52,3\,ms \\
+      & Inference ONNX p50 & 4,98\,ms \\
+      & Inference ONNX p95 & 6,94\,ms \\
+    \midrule
+    \multirow{3}{*}{Throughput}
+      & Readings / results / alerts (40\,s) & 21 / 21 / 21 \\
+      & Thông lượng mỗi tầng & 0,525\,msg/s \\
+      & Alert \texttt{degraded} (ổn định) & 0 \\
+    \bottomrule
+  \end{tabular}
+\end{table}

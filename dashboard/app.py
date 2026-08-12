@@ -161,4 +161,5 @@ if __name__ == "__main__":
     threading.Thread(target=_mqtt_thread, daemon=True).start()
     port = int(os.environ.get("DASHBOARD_PORT", 5000))
     LOG.info("Dashboard starting on http://0.0.0.0:%s", port)
-    socketio.run(app, host="0.0.0.0", port=port)
+    # Demo/lab: Werkzeug đủ dùng trong container nhỏ; flag bắt buộc từ flask-socketio≥5.x
+    socketio.run(app, host="0.0.0.0", port=port, allow_unsafe_werkzeug=True)

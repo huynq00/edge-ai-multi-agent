@@ -43,7 +43,8 @@ edge-ai-multi-agent/
 - [x] Đo metrics + E2E (`reports/metrics_run.json`, `reports/bao-cao-ky-thuat.md`)
 - [x] Web dashboard realtime (`dashboard/`) — hiển thị trạng thái agent, latency, alert feed
 - [ ] Video demo 5–10 phút (xem `docs/checklist-demo.md`)
-- [ ] Điền tên SV / hoàn thiện báo cáo nộp
+- [x] Báo cáo đồ án đầy đủ (`reports/bao-cao-do-an.md`) — cần điền tên SV / GV trước khi nộp
+- [ ] Điền tên SV / xuất Word–PDF nộp
 
 ## Công nghệ dự kiến
 
@@ -72,10 +73,10 @@ python dashboard/app.py
 # mở http://localhost:5000
 ```
 
-**Chạy Docker** (tích hợp sẵn trong Compose, port 5000, giới hạn 0.5 CPU / 256 MB):
+**Chạy Docker** (tích hợp sẵn trong Compose, host port **5001** → container 5000; macOS thường chiếm 5000, giới hạn 0.5 CPU / 256 MB):
 ```bash
 docker compose up -d --build
-# mở http://localhost:5000
+# mở http://localhost:5001
 ```
 
 ## Triển khai Docker (bước deploy — đúng ngân sách 2c/4GB)
@@ -117,6 +118,6 @@ python scripts/verify_decision_mqtt.py --count 3
 
 1. Mã nguồn + hướng dẫn deploy từng agent lên VM 2c/4GB
 2. Video demo 5–10 phút (gồm tình huống 1 agent lỗi) — checklist: [`docs/checklist-demo.md`](docs/checklist-demo.md)
-3. Báo cáo kỹ thuật: [`reports/bao-cao-ky-thuat.md`](reports/bao-cao-ky-thuat.md) · số liệu: [`reports/metrics_run.json`](reports/metrics_run.json)
+3. Báo cáo đồ án: Markdown [`reports/bao-cao-do-an.md`](reports/bao-cao-do-an.md) · **LaTeX** [`reports/latex/bao-cao.tex`](reports/latex/bao-cao.tex) · tóm tắt kỹ thuật [`reports/bao-cao-ky-thuat.md`](reports/bao-cao-ky-thuat.md) · số liệu [`reports/metrics_run.json`](reports/metrics_run.json)
 
 **Quy ước code (bắt buộc khi phát triển):** [`docs/QUY-UOC-CODE.md`](docs/QUY-UOC-CODE.md).

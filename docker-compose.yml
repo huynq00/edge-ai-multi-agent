@@ -77,7 +77,8 @@ services:
       MQTT_HOST: mqtt-broker
       MQTT_PORT: "1883"
     ports:
-      - "5000:5000"
+      # Host 5001: macOS thường chiếm 5000 (AirPlay / Control Center)
+      - "5001:5000"
     depends_on:
       - mqtt-broker
     cpus: 0.5

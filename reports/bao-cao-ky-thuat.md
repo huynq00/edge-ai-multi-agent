@@ -1,5 +1,7 @@
 # Báo cáo kỹ thuật — Multi-Agent trên Edge (CE2206)
 
+> Bản **tóm tắt kỹ thuật**. Báo cáo đồ án đầy đủ (văn phong khoá luận): [`bao-cao-do-an.md`](bao-cao-do-an.md).
+
 **Đề tài:** Triển khai hệ thống Multi-Agent trên Edge  
 **Miền ứng dụng:** Giám sát môi trường thông minh  
 **Nhóm / sinh viên:** _(điền tên)_  
